@@ -244,7 +244,6 @@
   <div class="summary" style="margin-top:36px;">
     <div class="summary-card" style="width:360px;">
       <div class="srow"><span>Combined subtotal (all sections)</span><span id="grandSub">₹0</span></div>
-      <div class="srow" style="font-size:11px;color:var(--ink-soft);padding-top:0;">Subtotals include 35% profit margin on cost</div>
       <div class="srow gstrow"><span>GST (<span id="grandGstLbl">18</span>%)</span><span id="grandGst">₹0</span></div>
       <div class="srow total"><span>Grand total (all sections)</span><span id="grandAll">₹0</span></div>
     </div>
@@ -312,7 +311,7 @@ function makeFittingsSection({ rowsInit, tbodyId, addBtnId, sumId, defaultUnit }
     const tbody = document.getElementById(tbodyId);
     tbody.innerHTML = '';
     secRows.forEach((r, i) => {
-      const lineTotal = (Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+      const lineTotal = withProfit((Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
@@ -350,7 +349,7 @@ function makeFittingsSection({ rowsInit, tbodyId, addBtnId, sumId, defaultUnit }
   function renderSummary(){
     document.querySelectorAll(`#${tbodyId} tr`).forEach((tr,i) => {
       const r = secRows[i];
-      const lineTotal = (Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+      const lineTotal = withProfit((Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
       tr.querySelector('.linetotal').textContent = fmt(lineTotal);
     });
     document.getElementById(sumId).textContent = fmt(getSubtotal());
@@ -476,8 +475,7 @@ function renderWardrobe(){
   wRows.forEach((r, i) => {
     const sugg = suggested[r.material];
     const hasFormula = sugg !== undefined;
-    const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (hasFormula ? sugg : (r.qty ?? 1));
-    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const lineTotal = withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
@@ -523,7 +521,7 @@ function wardrobeSubtotal(){
   return wRows.reduce((s,r) => {
     const sugg = suggested[r.material];
     const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
-    return s + (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    return s + withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
   }, 0);
 }
 
@@ -533,7 +531,7 @@ function renderWardrobeSummary(){
     const r = wRows[i];
     const sugg = suggested[r.material];
     const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
-    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const lineTotal = withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
     tr.querySelector('.linetotal').textContent = fmt(lineTotal);
   });
   document.getElementById('wSumSub').textContent = fmt(wardrobeSubtotal());
@@ -628,7 +626,7 @@ function renderPaneling(){
     const sugg = suggested[r.material];
     const hasFormula = sugg !== undefined;
     const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (hasFormula ? sugg : (r.qty ?? 1));
-    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const lineTotal = withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
@@ -671,7 +669,7 @@ function panelingSubtotal(){
   return pRows.reduce((s,r) => {
     const sugg = suggested[r.material];
     const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
-    return s + (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    return s + withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
   }, 0);
 }
 
@@ -681,7 +679,7 @@ function renderPanelingSummary(){
     const r = pRows[i];
     const sugg = suggested[r.material];
     const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
-    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const lineTotal = withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
     tr.querySelector('.linetotal').textContent = fmt(lineTotal);
   });
   document.getElementById('pSumSub').textContent = fmt(panelingSubtotal());
@@ -775,7 +773,7 @@ function modularUnitCosts(){
   uMaterials.forEach(m => {
     const sugg = suggested[m.name] || 0;
     const qty = uOverrides[m.name] !== undefined ? uOverrides[m.name] : sugg;
-    const cost = qty * m.rate;
+    const cost = withProfit(qty * m.rate);
     if(m.kind === 'labour') labSub += cost; else matSub += cost;
   });
   const transportPct = Number(document.getElementById('uTransportPct').value) || 0;
@@ -791,7 +789,7 @@ function renderModularUnit(){
   uMaterials.forEach(m => {
     const sugg = suggested[m.name] || 0;
     const qty = uOverrides[m.name] !== undefined ? uOverrides[m.name] : sugg;
-    const cost = qty * m.rate;
+    const cost = withProfit(qty * m.rate);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${m.displayName || m.name}</td>
@@ -812,7 +810,7 @@ function renderModularUnit(){
   });
 
   const count = Number(document.getElementById('uCount').value) || 1;
-  const batchTotal = withProfit(matSub + labSub + transport);
+  const batchTotal = matSub + labSub + transport;
   const perUnitAvg = batchTotal / count;
 
   document.getElementById('uMatSub').textContent = fmt(matSub);
@@ -826,7 +824,7 @@ function renderModularUnit(){
 
 function modularUnitSubtotal(){
   const { matSub, labSub, transport } = modularUnitCosts();
-  return withProfit(matSub + labSub + transport);
+  return matSub + labSub + transport;
 }
 
 ['uW','uH','uD','uN','uCount','uTransportPct','uWaste','uChannelType'].forEach(id => {
