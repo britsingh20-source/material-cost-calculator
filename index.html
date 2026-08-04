@@ -475,6 +475,7 @@ function renderWardrobe(){
   wRows.forEach((r, i) => {
     const sugg = suggested[r.material];
     const hasFormula = sugg !== undefined;
+    const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (hasFormula ? sugg : (r.qty ?? 1));
     const lineTotal = withProfit((Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)));
     const tr = document.createElement('tr');
     tr.innerHTML = `
