@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Material Cost Calculator</title>
+<style>
+  :root{
+    --wood-50:#F7F2EC; --wood-100:#EBDFCF; --wood-200:#D8C1A0;
+    --wood-500:#9C6B3E; --wood-600:#7A522F; --wood-800:#4A3320; --wood-900:#2E2013;
+    --ink:#26221D; --ink-soft:#6B6357; --line:#E4DACB; --line-strong:#CBBCA4;
+    --paper:#FFFDF9; --paper-2:#FBF6EE;
+    --accent:#B5502D; --accent-ink:#4A1B0C;
+    --good:#3B6D11; --good-bg:#EAF3DE;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:transparent;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:1.5rem 0;}
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--wood-800);padding-bottom:14px;margin-bottom:20px;}
+  .masthead h1{font-size:20px;font-weight:500;margin:0;letter-spacing:.2px;}
+  .masthead .sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .masthead .stamp{font-size:11px;color:var(--wood-600);border:1px solid var(--wood-200);border-radius:20px;padding:4px 12px;white-space:nowrap;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+  .toolbar select, .toolbar input[type=number]{height:34px;font-size:13px;}
+  .toolbar label{font-size:12.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:13.5px;}
+  thead th{background:var(--wood-900);color:var(--wood-50);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:9px 8px;}
+  thead th.num{text-align:right;}
+  tbody td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:nth-child(even){background:var(--paper-2);}
+  tbody input, tbody select{width:100%;border:1px solid transparent;background:transparent;padding:6px 6px;font-size:13.5px;border-radius:6px;color:var(--ink);}
+  tbody input:hover, tbody select:hover{border-color:var(--line-strong);}
+  tbody input:focus, tbody select:focus{border-color:var(--wood-500);background:#fff;outline:none;}
+  tbody input[type=number]{text-align:right;font-variant-numeric:tabular-nums;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  td.linetotal{font-weight:500;color:var(--wood-800);}
+  .rm-btn{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:16px;line-height:1;padding:4px;border-radius:6px;}
+  .rm-btn:hover{color:var(--accent-ink);background:#F4E3DC;}
+
+  .addrow{margin-top:10px;background:none;border:1px dashed var(--line-strong);color:var(--wood-800);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer;width:100%;}
+  .addrow:hover{border-color:var(--wood-500);background:var(--wood-50);}
+
+  .summary{margin-top:22px;display:flex;justify-content:flex-end;}
+  .summary-card{width:320px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;}
+  .srow{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;color:var(--ink-soft);}
+  .srow.total{border-top:2px solid var(--wood-800);margin-top:6px;padding-top:10px;font-size:17px;color:var(--ink);font-weight:500;}
+  .srow.total span:last-child{color:var(--wood-800);}
+  .gstrow input[type=number]{width:52px;height:26px;font-size:12.5px;text-align:right;border:1px solid var(--line-strong);border-radius:6px;margin-left:6px;}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  @media(max-width:640px){
+    .masthead{flex-direction:column;align-items:flex-start;gap:6px;}
+    thead th:nth-child(2), thead th:nth-child(3){display:none;}
+    tbody td:nth-child(2), tbody td:nth-child(3){display:none;}
+    .summary-card{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2 class="sr-only">Interior material cost calculator — add materials with rate and making charge to compute total project expense.</h2>
+
+  <div class="masthead" style="flex-wrap:wrap;gap:14px;">
+    <div style="flex:1;min-width:220px;">
+      <h1 style="margin-bottom:8px;">Interior cost quote</h1>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" id="clientName" placeholder="Client name" style="height:32px;font-size:13px;border:1px solid var(--line-strong);border-radius:6px;padding:0 8px;flex:1;min-width:160px;">
+        <input type="text" id="projectRef" placeholder="Project / site" style="height:32px;font-size:13px;border:1px solid var(--line-strong);border-radius:6px;padding:0 8px;flex:1;min-width:160px;">
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <input type="date" id="quoteDate" style="height:32px;font-size:12.5px;border:1px solid var(--line-strong);border-radius:6px;padding:0 8px;">
+      <span class="stamp" id="dateStamp" style="display:none;"></span>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <label>GST %
+      <input type="number" id="gstPct" value="18" min="0" step="0.5" style="width:56px;">
+    </label>
+    <label><input type="checkbox" id="gstOn" checked style="width:auto;height:auto;"> apply GST</label>
+    <span class="sub" style="font-size:12px;">Applies once, to the combined total at the bottom of the page.</span>
+  </div>
+
+  <div style="margin-top:36px;border-top:2px solid var(--wood-800);padding-top:18px;">
+    <h1 style="font-size:18px;font-weight:500;margin:0 0 3px;">Wardrobe fittings and hardware</h1>
+    <div class="sub" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Set your wardrobe size below — plywood, back sheet and mica are board-nested across "Units"; hardware scales per shutter/drawer × units. All suggested quantities are still editable per row.</div>
+
+    <div class="toolbar" style="gap:14px;">
+      <label>W (ft) <input type="number" id="wW" value="7" step="0.01" style="width:64px;"></label>
+      <label>H (ft) <input type="number" id="wH" value="7" step="0.01" style="width:64px;"></label>
+      <label>D (ft) <input type="number" id="wD" value="2" step="0.01" style="width:64px;"></label>
+      <label>Shutters/doors <input type="number" id="wShutters" value="3" step="1" min="1" style="width:56px;"></label>
+      <label>Drawers <input type="number" id="wDrawers" value="3" step="1" min="0" style="width:56px;"></label>
+      <label>Units <input type="number" id="wCount" value="1" step="1" min="1" style="width:52px;"></label>
+      <label>Wastage % <input type="number" id="wWaste" value="10" step="1" min="0" style="width:52px;"></label>
+      <label>Channel type
+        <select id="wChannelType">
+          <option value="ebco">Ebco soft-close (auto by depth)</option>
+          <option value="quadrant">Quadrant channel — ₹1200/piece</option>
+          <option value="tandem">Tandem — ₹3000/piece</option>
+        </select>
+      </label>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:22%;">Item</th>
+          <th class="num" style="width:12%;">Suggested qty</th>
+          <th class="num" style="width:10%;">Your qty</th>
+          <th style="width:9%;">Unit</th>
+          <th class="num" style="width:13%;">Rate / unit (₹)</th>
+          <th class="num" style="width:15%;">Making / unit (₹)</th>
+          <th class="num" style="width:15%;">Line total (₹)</th>
+          <th style="width:4%;"></th>
+        </tr>
+      </thead>
+      <tbody id="wRows"></tbody>
+    </table>
+
+    <button class="addrow" id="wAddBtn">+ Add item</button>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="srow total"><span>Wardrobe subtotal</span><span id="wSumSub">₹0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:36px;border-top:2px solid var(--wood-800);padding-top:18px;">
+    <h1 style="font-size:18px;font-weight:500;margin:0 0 3px;">Wall paneling</h1>
+    <div class="sub" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Laminate/veneer finished paneling — board + laminate are board-nested (8×4 sheets); edge trim runs around the panel perimeter. Set your wall size below; suggested quantities are still editable per row.</div>
+
+    <div class="toolbar" style="gap:14px;">
+      <label>W (ft) <input type="number" id="pW" value="10" step="0.01" style="width:64px;"></label>
+      <label>H (ft) <input type="number" id="pH" value="9" step="0.01" style="width:64px;"></label>
+      <label>Walls/Units <input type="number" id="pCount" value="1" step="1" min="1" style="width:52px;"></label>
+      <label>Wastage % <input type="number" id="pWaste" value="10" step="1" min="0" style="width:52px;"></label>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:22%;">Item</th>
+          <th class="num" style="width:12%;">Suggested qty</th>
+          <th class="num" style="width:10%;">Your qty</th>
+          <th style="width:9%;">Unit</th>
+          <th class="num" style="width:13%;">Rate / unit (₹)</th>
+          <th class="num" style="width:15%;">Making / unit (₹)</th>
+          <th class="num" style="width:15%;">Line total (₹)</th>
+          <th style="width:4%;"></th>
+        </tr>
+      </thead>
+      <tbody id="pRows"></tbody>
+    </table>
+
+    <button class="addrow" id="pAddBtn">+ Add item</button>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="srow total"><span>Wall paneling subtotal</span><span id="pSumSub">₹0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:36px;border-top:2px solid var(--wood-800);padding-top:18px;">
+    <h1 style="font-size:18px;font-weight:500;margin:0 0 3px;">Kitchen fittings and hardware</h1>
+    <div class="sub" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Rates below are typical market defaults — edit to match your design and vendor rates.</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:26%;">Item</th>
+          <th class="num" style="width:10%;">Qty</th>
+          <th style="width:10%;">Unit</th>
+          <th class="num" style="width:15%;">Rate / unit (₹)</th>
+          <th class="num" style="width:17%;">Making / unit (₹)</th>
+          <th class="num" style="width:17%;">Line total (₹)</th>
+          <th style="width:5%;"></th>
+        </tr>
+      </thead>
+      <tbody id="kRows"></tbody>
+    </table>
+
+    <button class="addrow" id="kAddBtn">+ Add item</button>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="srow total"><span>Kitchen subtotal</span><span id="kSumSub">₹0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:36px;border-top:2px solid var(--wood-800);padding-top:18px;">
+    <h1 style="font-size:18px;font-weight:500;margin:0 0 3px;">Modular unit calculator</h1>
+    <div class="sub" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Drawer / carcase unit — set "Units of this section" to your full quantity; boards are nested and rounded up once across the whole batch, not per piece, so shared offcuts aren't double-billed.</div>
+
+    <div class="toolbar" style="gap:14px;">
+      <label>W (ft) <input type="number" id="uW" value="3.5" step="0.01" style="width:64px;"></label>
+      <label>H (ft) <input type="number" id="uH" value="3" step="0.01" style="width:64px;"></label>
+      <label>D (ft) <input type="number" id="uD" value="1.5" step="0.01" style="width:64px;"></label>
+      <label>Drawers <input type="number" id="uN" value="3" step="1" min="1" style="width:56px;"></label>
+      <label>Units of this section <input type="number" id="uCount" value="1" step="1" min="1" style="width:56px;"></label>
+      <label>Wastage % <input type="number" id="uWaste" value="10" step="1" min="0" style="width:52px;"></label>
+      <label>Channel type
+        <select id="uChannelType">
+          <option value="ebco">Ebco soft-close (auto by depth)</option>
+          <option value="quadrant">Quadrant channel — ₹1200/piece</option>
+          <option value="tandem">Tandem — ₹3000/piece</option>
+        </select>
+      </label>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:26%;">Material</th>
+          <th class="num" style="width:16%;">Suggested qty (batch)</th>
+          <th class="num" style="width:12%;">Your qty (batch)</th>
+          <th style="width:10%;">Unit</th>
+          <th class="num" style="width:14%;">Rate (₹)</th>
+          <th class="num" style="width:18%;">Cost (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="uRows"></tbody>
+    </table>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="srow"><span>Material subtotal</span><span id="uMatSub">₹0</span></div>
+        <div class="srow"><span>Labour + processing</span><span id="uLabSub">₹0</span></div>
+        <div class="srow gstrow"><span>Transport <input type="number" id="uTransportPct" value="5" step="0.5" style="width:44px;">%</span><span id="uTransport">₹0</span></div>
+        <div class="srow total"><span>Batch total (<span id="uCountLbl">1</span> units, nested cutting)</span><span id="uGrand">₹0</span></div>
+        <div class="srow" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;"><span>Average cost per unit</span><span id="uPerUnit" style="font-weight:500;color:var(--wood-800);">₹0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary" style="margin-top:36px;">
+    <div class="summary-card" style="width:360px;">
+      <div class="srow"><span>Combined subtotal (all sections)</span><span id="grandSub">₹0</span></div>
+      <div class="srow" style="font-size:11px;color:var(--ink-soft);padding-top:0;">Subtotals include 35% profit margin on cost</div>
+      <div class="srow gstrow"><span>GST (<span id="grandGstLbl">18</span>%)</span><span id="grandGst">₹0</span></div>
+      <div class="srow total"><span>Grand total (all sections)</span><span id="grandAll">₹0</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const units = ['sqft','sqm','nos','rft','kg','box','ltr','set','piece','board','side'];
+// declared early (before section renders below) so that
+// updateGrandAll() never tries to read these before they exist
+let wardrobeSection, kitchenSection, panelingSection, modularUnitSection;
+
+function fmt(n){
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+
+// Profit ratio applied automatically to every displayed total/subtotal (not to individual line-item costs).
+const PROFIT_MARGIN = 0.35;
+function withProfit(n){
+  return n * (1 + PROFIT_MARGIN);
+}
+
+document.getElementById('gstOn').addEventListener('change', () => { if(typeof updateGrandAll === 'function') updateGrandAll(); });
+document.getElementById('gstPct').addEventListener('input', () => { if(typeof updateGrandAll === 'function') updateGrandAll(); });
+
+document.getElementById('quoteDate').value = new Date().toISOString().slice(0,10);
+
+const SHEET_SQFT = 32;
+// Wastage inflates the raw area FIRST (kerf/spoilage as a % of what you're cutting),
+// then that inflated area is rounded up to whole sheets once — so a small wastage %
+// only tips you into an extra sheet when it actually pushes the area over a sheet boundary,
+// rather than always rounding the sheet count itself up an extra step.
+function nestSheets(areaSqft, waste){
+  return Math.ceil((areaSqft * (1+waste)) / SHEET_SQFT) || 1;
+}
+// Drawer channel rate depends on length/depth — add more sizes here as needed (inches : rate).
+const CHANNEL_OPTIONS = [
+  { inches: 14, rate: 450, label: '14" Ebco soft-close channel' },
+  { inches: 16, rate: 550, label: '16" Ebco soft-close channel' },
+  { inches: 20, rate: 800, label: '20" Ebco soft-close channel' },
+];
+const FLAT_CHANNELS = {
+  quadrant: { rate: 1200, label: 'Quadrant channel' },
+  tandem:   { rate: 3000, label: 'Tandem' },
+};
+function pickChannel(depthFt, channelSelectId){
+  const type = document.getElementById(channelSelectId).value;
+  if(FLAT_CHANNELS[type]) return FLAT_CHANNELS[type];
+  const depthIn = depthFt * 12;
+  const sorted = [...CHANNEL_OPTIONS].sort((a,b) => a.inches - b.inches);
+  // channel must slide INSIDE the drawer box, so it can't be longer than the depth —
+  // pick the largest listed size that still fits; only fall back to the smallest
+  // available size if every option is longer than the drawer itself
+  const fitting = sorted.filter(c => c.inches <= depthIn);
+  return fitting.length ? fitting[fitting.length - 1] : sorted[0];
+}
+
+// Generic factory for a "fittings & hardware" quote section — same row shape
+// (material/qty/unit/rate/making) as Wardrobe, just different default items.
+// Returns {render, getSubtotal} so each section stays independent but shares one codepath.
+function makeFittingsSection({ rowsInit, tbodyId, addBtnId, sumId, defaultUnit }){
+  let secRows = rowsInit.map(r => ({...r}));
+
+  function render(){
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+    secRows.forEach((r, i) => {
+      const lineTotal = (Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
+        <td class="num"><input type="number" value="${r.qty}" data-i="${i}" data-f="qty" min="0" step="0.01"></td>
+        <td><select data-i="${i}" data-f="unit">${units.map(u=>`<option value="${u}" ${u===r.unit?'selected':''}>${u}</option>`).join('')}</select></td>
+        <td class="num"><input type="number" value="${r.rate}" data-i="${i}" data-f="rate" min="0" step="0.01"></td>
+        <td class="num"><input type="number" value="${r.making}" data-i="${i}" data-f="making" min="0" step="0.01"></td>
+        <td class="num linetotal">${fmt(lineTotal)}</td>
+        <td><button class="rm-btn" data-rm="${i}" aria-label="Remove row">×</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('input,select').forEach(el => {
+      el.addEventListener('input', e => {
+        const i = +e.target.dataset.i, f = e.target.dataset.f;
+        secRows[i][f] = e.target.value;
+        renderSummary();
+      });
+    });
+    tbody.querySelectorAll('[data-rm]').forEach(el => {
+      el.addEventListener('click', e => {
+        secRows.splice(+e.currentTarget.dataset.rm, 1);
+        render();
+      });
+    });
+    renderSummary();
+  }
+
+  function getSubtotal(){
+    const raw = secRows.reduce((s,r) => s + (Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0)), 0);
+    return withProfit(raw);
+  }
+
+  function renderSummary(){
+    document.querySelectorAll(`#${tbodyId} tr`).forEach((tr,i) => {
+      const r = secRows[i];
+      const lineTotal = (Number(r.qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+      tr.querySelector('.linetotal').textContent = fmt(lineTotal);
+    });
+    document.getElementById(sumId).textContent = fmt(getSubtotal());
+    updateGrandAll();
+  }
+
+  document.getElementById(addBtnId).addEventListener('click', () => {
+    secRows.push({material:'', qty:1, unit:defaultUnit, rate:0, making:0});
+    render();
+  });
+
+  return { render, getSubtotal };
+}
+
+// Wardrobe section is size-aware: known items get a suggested qty computed from
+// W/H/shutters/drawers (editable per row, like the modular unit calculator above).
+// Custom items you add yourself just work as plain manual-qty rows (no formula for them).
+let wRows = [
+  {material:'Plywood 16mm', unit:'sqft', rate:68, making:0, kind:'material'},
+  {material:'Back sheet 8mm', unit:'sqft', rate:45, making:0, kind:'material'},
+  {material:'Shutter board (HDHMR)', unit:'sqft', rate:55, making:0, kind:'material'},
+  {material:'Facial mica (8×4)', unit:'piece', rate:1000, making:0, kind:'material'},
+  {material:'Inner box mica (8×4)', unit:'piece', rate:550, making:0, kind:'material'},
+  {material:'Drawer channel', unit:'set', rate:150, making:0, kind:'material'},
+  {material:'Hinges', unit:'set', rate:140, making:0, kind:'material'},
+  {material:'Labour', unit:'sqft', rate:270, making:0, kind:'labour'},
+  {material:'Mica cold pressing', unit:'side', rate:220, making:0, kind:'labour'},
+  {material:'Wood cutting', unit:'board', rate:200, making:0, kind:'labour'},
+  {material:'Shutter edge band 2mm', unit:'rft', rate:10, making:0, kind:'material'},
+  {material:'Box edge band 0.8mm', unit:'sqft', rate:15, making:0, kind:'material'},
+  {material:'Screw 1" (white)', unit:'piece', rate:0.4, making:0, kind:'material'},
+  {material:'Screw 1¼" (white)', unit:'piece', rate:0.5, making:0, kind:'material'},
+  {material:'Screw 2" (white)', unit:'piece', rate:0.8, making:0, kind:'material'},
+  {material:'Heatx adhesive (mica pasting)', unit:'ltr', rate:550, making:0, kind:'material'},
+  {material:'Mirror', unit:'sqft', rate:80, making:0, kind:'material'},
+  {material:'Hanger rod (10ft)', unit:'piece', rate:550, making:0, kind:'material'},
+  {material:'Fittings / holder set', unit:'piece', rate:100, making:0, kind:'material'},
+  {material:'Handles', unit:'piece', rate:130, making:0, kind:'material'},
+  {material:'Tower bolt', unit:'piece', rate:100, making:0, kind:'material'},
+  {material:'Cupboard lock', unit:'piece', rate:250, making:0, kind:'material'},
+  {material:'Drawer lock', unit:'piece', rate:80, making:0, kind:'material'},
+];
+let wOverrides = {};
+
+function wardrobeSuggest(){
+  const W = Number(document.getElementById('wW').value) || 0;
+  const H = Number(document.getElementById('wH').value) || 0;
+  const D = Number(document.getElementById('wD').value) || 0;
+  const shutters = Number(document.getElementById('wShutters').value) || 1;
+  const drawers = Number(document.getElementById('wDrawers').value) || 0;
+  const count = Number(document.getElementById('wCount').value) || 1;
+  const waste = (Number(document.getElementById('wWaste').value) || 0) / 100;
+
+  // carcase = top+bottom+2 sides (back panel costed separately as 8mm below);
+  // drawer bank (if any) reuses the same box formula as the modular unit calculator
+  const carcase = 2*(W*D) + 2*(H*D);
+  const drawerBoxSqft = drawers > 0 ? (drawers*(W*D) + (W*H) + 2*(D*H)) : 0;
+  const plyRawPerUnit = carcase + drawerBoxSqft;
+  const backSheetAreaPerUnit = W*H;
+  const shutterOnlyAreaPerUnit = W*H;                             // shutter fronts only — this is what HDHMR is sized to
+  const exposedSideAreaPerUnit = H*D;                             // one visible side panel (screws covered with mica; board itself is already in the carcase plywood)
+  const facialAreaPerUnit = shutterOnlyAreaPerUnit + exposedSideAreaPerUnit;
+  const innerAreaPerUnit = (W*H) + backSheetAreaPerUnit + (drawerBoxSqft * 2); // shutter backs + back-sheet inner face + drawer box panels (both exposed faces get mica)
+
+  const plyRawBatch = plyRawPerUnit * count;
+  const backSheetBatch = backSheetAreaPerUnit * count;
+  const facialAreaBatch = facialAreaPerUnit * count;
+  const exposedSideAreaBatch = exposedSideAreaPerUnit * count;
+  const shutterOnlyAreaBatch = shutterOnlyAreaPerUnit * count;
+  const innerAreaBatch = innerAreaPerUnit * count;
+
+  const plyBoards = nestSheets(plyRawBatch, waste);
+  const backBoards = nestSheets(backSheetBatch, waste);
+  const facialBoards = nestSheets(facialAreaBatch, waste);
+  const innerBoards = nestSheets(innerAreaBatch, waste);
+  const shutterBoardBoards = nestSheets(shutterOnlyAreaBatch, waste); // HDHMR substrate — shutters only, not the side panel
+
+  const channel = pickChannel(D, 'wChannelType');
+  const channelRow = wRows.find(r => r.material === 'Drawer channel');
+  channelRow.rate = channel.rate;
+  channelRow.displayName = channel.label;
+
+  // Edge band is a running-foot tape around each shutter's perimeter, not an area —
+  // each shutter is (W/shutters) wide × H tall, so its perimeter is 2×((W/shutters)+H).
+  // Summed across all shutters: shutters × 2×((W/shutters)+H) = 2×(W + shutters×H).
+  // e.g. a 1.5×7 ft shutter (shutters=1) → 2×(1.5+7) = 17 rft.
+  const shutterEdgeBandBatch = 2 * (W + shutters * H) * count;
+
+  return {
+    'Plywood 16mm': plyBoards * SHEET_SQFT,
+    'Back sheet 8mm': backBoards * SHEET_SQFT,
+    'Shutter board (HDHMR)': shutterBoardBoards * SHEET_SQFT,
+    'Facial mica (8×4)': facialBoards,
+    'Inner box mica (8×4)': innerBoards,
+    'Drawer channel': drawers * count,
+    'Hinges': shutters * 3 * count,                                // 3 hinges/shutter is the common default
+    'Labour': shutterOnlyAreaBatch,
+    'Mica cold pressing': facialBoards + innerBoards,
+    'Wood cutting': plyBoards + backBoards + shutterBoardBoards,
+    'Shutter edge band 2mm': shutterEdgeBandBatch,
+    'Box edge band 0.8mm': plyRawBatch * 0.25,
+    'Screw 1" (white)': 0,
+    'Screw 1¼" (white)': 0,
+    'Screw 2" (white)': 0,
+    // Heatx is hand-pasted only on the exposed side panel — facial/inner mica goes through
+    // the cold press instead, already billed under Mica cold pressing. Coverage on both
+    // surfaces (board + mica sheet), ~100 sqft/ltr is a typical contact-adhesive rule of thumb.
+    'Heatx adhesive (mica pasting)': +((exposedSideAreaBatch * 2) / 100).toFixed(2),
+    'Mirror': 0,                                                    // optional — only if a shutter carries a mirror; enter manually
+    'Hanger rod (10ft)': Math.max(Math.ceil(W / 10), 1) * count,
+    'Fittings / holder set': shutters * count,
+    'Handles': (shutters + drawers) * count,
+    'Tower bolt': Math.ceil(shutters / 2) * count,
+    'Cupboard lock': Math.ceil(shutters / 2) * count,
+    'Drawer lock': drawers * count,
+  };
+}
+
+function renderWardrobe(){
+  const suggested = wardrobeSuggest();
+  const tbody = document.getElementById('wRows');
+  tbody.innerHTML = '';
+  wRows.forEach((r, i) => {
+    const sugg = suggested[r.material];
+    const hasFormula = sugg !== undefined;
+    const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (hasFormula ? sugg : (r.qty ?? 1));
+    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
+      <td class="num" style="color:var(--ink-soft);">${hasFormula ? sugg.toFixed(2) : '—'}</td>
+      <td class="num"><input type="number" value="${Number(qty).toFixed(2)}" data-i="${i}" data-f="qty" min="0" step="0.01"></td>
+      <td><select data-i="${i}" data-f="unit">${units.map(u=>`<option value="${u}" ${u===r.unit?'selected':''}>${u}</option>`).join('')}</select></td>
+      <td class="num"><input type="number" value="${r.rate}" data-i="${i}" data-f="rate" min="0" step="0.01"></td>
+      <td class="num"><input type="number" value="${r.making}" data-i="${i}" data-f="making" min="0" step="0.01"></td>
+      <td class="num linetotal">${fmt(lineTotal)}</td>
+      <td><button class="rm-btn" data-rm="${i}" aria-label="Remove row">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('input,select').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      if(f === 'qty'){
+        wOverrides[wRows[i].material] = Number(e.target.value) || 0;
+      } else {
+        if(f === 'material'){
+          // renaming a row loses any qty override tied to the old name
+          delete wOverrides[wRows[i].material];
+        }
+        wRows[i][f] = e.target.value;
+      }
+      renderWardrobeSummary();
+    });
+  });
+  tbody.querySelectorAll('[data-rm]').forEach(el => {
+    el.addEventListener('click', e => {
+      const idx = +e.currentTarget.dataset.rm;
+      delete wOverrides[wRows[idx].material];
+      wRows.splice(idx, 1);
+      renderWardrobe();
+    });
+  });
+  renderWardrobeSummary();
+}
+
+function wardrobeSubtotal(){
+  const suggested = wardrobeSuggest();
+  return wRows.reduce((s,r) => {
+    const sugg = suggested[r.material];
+    const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
+    return s + (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+  }, 0);
+}
+
+function renderWardrobeSummary(){
+  const suggested = wardrobeSuggest();
+  document.querySelectorAll('#wRows tr').forEach((tr,i) => {
+    const r = wRows[i];
+    const sugg = suggested[r.material];
+    const qty = wOverrides[r.material] !== undefined ? wOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
+    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    tr.querySelector('.linetotal').textContent = fmt(lineTotal);
+  });
+  document.getElementById('wSumSub').textContent = fmt(wardrobeSubtotal());
+  if(typeof updateGrandAll === 'function') updateGrandAll();
+}
+
+document.getElementById('wAddBtn').addEventListener('click', () => {
+  wRows.push({material:'', qty:1, unit:'piece', rate:0, making:0});
+  renderWardrobe();
+});
+['wW','wH','wD','wShutters','wDrawers','wCount','wWaste','wChannelType'].forEach(id => {
+  const evt = id === 'wChannelType' ? 'change' : 'input';
+  document.getElementById(id).addEventListener(evt, () => {
+    wOverrides = {};
+    renderWardrobe();
+  });
+});
+
+wardrobeSection = { render: renderWardrobe, getSubtotal: wardrobeSubtotal };
+
+kitchenSection = makeFittingsSection({
+  tbodyId:'kRows', addBtnId:'kAddBtn', sumId:'kSumSub', defaultUnit:'piece',
+  rowsInit:[
+    {material:'Cutlery basket (tandem)', qty:1, unit:'piece', rate:2500, making:0},
+    {material:'Thali basket (tandem)', qty:1, unit:'piece', rate:3000, making:0},
+    {material:'Drawer (tandem)', qty:1, unit:'piece', rate:2500, making:0},
+    {material:'Oil pull-out', qty:1, unit:'piece', rate:2000, making:0},
+    {material:'Wicker basket', qty:1, unit:'piece', rate:2500, making:0},
+    {material:'Pan pullout', qty:1, unit:'piece', rate:3500, making:0},
+    {material:'Rice basket', qty:1, unit:'piece', rate:6500, making:0},
+    {material:'Magic corner', qty:1, unit:'piece', rate:7000, making:0},
+    {material:'Rolling shutter', qty:1, unit:'piece', rate:14000, making:0},
+  ]
+});
+
+// Wall paneling: laminate/veneer finished — board + laminate are board-nested (8×4 sheets,
+// same SHEET_SQFT as the wardrobe); edge trim runs around each wall's perimeter, not its area.
+let pRows = [
+  {material:'Wooden piling / batten framing (2")', unit:'rft', rate:25, making:0, kind:'material'},
+  {material:'Plywood 16mm (8×4)', unit:'sqft', rate:68, making:0, kind:'material'},
+  {material:'Facial mica (8×4)', unit:'piece', rate:1000, making:0, kind:'material'},
+  {material:'Edge band 0.8mm (on-site pasting)', unit:'rft', rate:8, making:0, kind:'material'},
+  {material:'Heatx adhesive (lamination)', unit:'ltr', rate:550, making:0, kind:'material'},
+  {material:'Labour (fixing)', unit:'sqft', rate:160, making:0, kind:'labour'},
+  {material:'Wood cutting', unit:'board', rate:200, making:0, kind:'labour'},
+  {material:'Screw / fasteners', unit:'piece', rate:0.5, making:0, kind:'material'},
+];
+let pOverrides = {};
+
+function panelingSuggest(){
+  const W = Number(document.getElementById('pW').value) || 0;
+  const H = Number(document.getElementById('pH').value) || 0;
+  const count = Number(document.getElementById('pCount').value) || 1;
+  const waste = (Number(document.getElementById('pWaste').value) || 0) / 100;
+
+  const baseAreaPerUnit = W * H;
+  const baseAreaBatch = baseAreaPerUnit * count;
+  // Side + top ledges (6" deep wrap trim) add their own board+mica face area on top of the
+  // flat wall — no separate depth math needed since you gave the area directly: +20% of the
+  // base paneling area, applied to every board/mica/labour layer below.
+  const totalAreaBatch = baseAreaBatch * 1.20;
+
+  const plyBoards = nestSheets(totalAreaBatch, waste);
+  // Facial mica sold as 8×4 (32 sqft) sheets, same nesting math as the plywood.
+  const micaSheets = nestSheets(totalAreaBatch, waste);
+  // Wooden piling/batten (2") is the wall-fixing frame the plywood is fixed onto — rft, not sqft,
+  // since battens run linear. No spacing was given, so this uses a common ~2.5 rft of 2" batten
+  // per sqft of wall (roughly a 12–16" grid); edit the qty directly if your actual spacing differs.
+  const pilingRft = Math.ceil(totalAreaBatch * 2.5 * (1+waste));
+  // Edge band is pasted on-site around the perimeter of the base wall(s), same running-foot logic
+  // as the wardrobe shutter fix: 2×(W+H) per wall.
+  const edgeBandBatch = 2 * (W + H) * count;
+
+  return {
+    'Wooden piling / batten framing (2")': pilingRft,
+    'Plywood 16mm (8×4)': plyBoards * SHEET_SQFT,
+    'Facial mica (8×4)': micaSheets,
+    'Edge band 0.8mm (on-site pasting)': edgeBandBatch,
+    // Coverage on both surfaces (board + mica sheet), ~100 sqft/ltr contact-adhesive rule of thumb.
+    'Heatx adhesive (lamination)': +((totalAreaBatch * 2) / 100).toFixed(2),
+    'Labour (fixing)': +totalAreaBatch.toFixed(2),
+    'Wood cutting': plyBoards + micaSheets,
+    'Screw / fasteners': 0,          // optional — enter manually if needed
+  };
+}
+
+function renderPaneling(){
+  const suggested = panelingSuggest();
+  const tbody = document.getElementById('pRows');
+  tbody.innerHTML = '';
+  pRows.forEach((r, i) => {
+    const sugg = suggested[r.material];
+    const hasFormula = sugg !== undefined;
+    const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (hasFormula ? sugg : (r.qty ?? 1));
+    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${r.material}" data-i="${i}" data-f="material"></td>
+      <td class="num" style="color:var(--ink-soft);">${hasFormula ? sugg.toFixed(2) : '—'}</td>
+      <td class="num"><input type="number" value="${Number(qty).toFixed(2)}" data-i="${i}" data-f="qty" min="0" step="0.01"></td>
+      <td><select data-i="${i}" data-f="unit">${units.map(u=>`<option value="${u}" ${u===r.unit?'selected':''}>${u}</option>`).join('')}</select></td>
+      <td class="num"><input type="number" value="${r.rate}" data-i="${i}" data-f="rate" min="0" step="0.01"></td>
+      <td class="num"><input type="number" value="${r.making}" data-i="${i}" data-f="making" min="0" step="0.01"></td>
+      <td class="num linetotal">${fmt(lineTotal)}</td>
+      <td><button class="rm-btn" data-rm="${i}" aria-label="Remove row">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('input,select').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      if(f === 'qty'){
+        pOverrides[pRows[i].material] = Number(e.target.value) || 0;
+      } else {
+        if(f === 'material') delete pOverrides[pRows[i].material];
+        pRows[i][f] = e.target.value;
+      }
+      renderPanelingSummary();
+    });
+  });
+  tbody.querySelectorAll('[data-rm]').forEach(el => {
+    el.addEventListener('click', e => {
+      const idx = +e.currentTarget.dataset.rm;
+      delete pOverrides[pRows[idx].material];
+      pRows.splice(idx, 1);
+      renderPaneling();
+    });
+  });
+  renderPanelingSummary();
+}
+
+function panelingSubtotal(){
+  const suggested = panelingSuggest();
+  return pRows.reduce((s,r) => {
+    const sugg = suggested[r.material];
+    const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
+    return s + (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+  }, 0);
+}
+
+function renderPanelingSummary(){
+  const suggested = panelingSuggest();
+  document.querySelectorAll('#pRows tr').forEach((tr,i) => {
+    const r = pRows[i];
+    const sugg = suggested[r.material];
+    const qty = pOverrides[r.material] !== undefined ? pOverrides[r.material] : (sugg !== undefined ? sugg : (r.qty ?? 1));
+    const lineTotal = (Number(qty)||0) * ((Number(r.rate)||0) + (Number(r.making)||0));
+    tr.querySelector('.linetotal').textContent = fmt(lineTotal);
+  });
+  document.getElementById('pSumSub').textContent = fmt(panelingSubtotal());
+  if(typeof updateGrandAll === 'function') updateGrandAll();
+}
+
+document.getElementById('pAddBtn').addEventListener('click', () => {
+  pRows.push({material:'', qty:1, unit:'sqft', rate:0, making:0});
+  renderPaneling();
+});
+['pW','pH','pCount','pWaste'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    pOverrides = {};
+    renderPaneling();
+  });
+});
+
+panelingSection = { render: renderPaneling, getSubtotal: panelingSubtotal };
+
+// Modular unit calculator: a standalone drawer/carcase batch quote — board-nested
+// the same way as the wardrobe/paneling sections (shared SHEET_SQFT/nestSheets/pickChannel),
+// but with its own material list, transport %, and per-unit average cost.
+let uMaterials = [
+  {name:'Plywood 16mm', unit:'sqft', rate:68, kind:'material'},
+  {name:'Back sheet 8mm', unit:'sqft', rate:45, kind:'material'},
+  {name:'Facial mica (8×4)', unit:'piece', rate:1000, kind:'material'},
+  {name:'Inner box mica (8×4)', unit:'piece', rate:550, kind:'material'},
+  {name:'Drawer channel', unit:'set', rate:150, kind:'material'},
+  {name:'Hinges', unit:'set', rate:140, kind:'material'},
+  {name:'Labour', unit:'sqft', rate:270, kind:'labour'},
+  {name:'Mica cold pressing', unit:'side', rate:220, kind:'labour'},
+  {name:'Wood cutting', unit:'board', rate:200, kind:'labour'},
+  {name:'Edge banding 2mm', unit:'sqft', rate:32, kind:'material'},
+];
+let uOverrides = {};
+
+function suggestUnitQty(){
+  const W = Number(document.getElementById('uW').value) || 0;
+  const H = Number(document.getElementById('uH').value) || 0;
+  const D = Number(document.getElementById('uD').value) || 0;
+  const N = Number(document.getElementById('uN').value) || 1;
+  const count = Number(document.getElementById('uCount').value) || 1;
+  const waste = (Number(document.getElementById('uWaste').value) || 0) / 100;
+
+  const carcase = 2*(W*D) + 2*(H*D);           // top, bottom, 2 sides — back panel costed separately as 8mm below
+  const dividers = Math.max(N-1,0)*(W*D);
+  const drawerBoxSqft = N*(W*D) + (W*H) + 2*(D*H);
+  const plyRawPerUnit = carcase + dividers + drawerBoxSqft;
+  const facialAreaPerUnit = W*H;
+  const backSheetAreaPerUnit = W*H;             // back panel — 8mm, one side inner mica, wall-contact side left bare
+
+  // batch nesting: pool raw sqft across all units first, THEN round to whole boards once —
+  // offcuts from one unit's panels get reused on the next unit's cuts, same as a real cutting list
+  const plyRawBatch = plyRawPerUnit * count;
+  const backSheetBatch = backSheetAreaPerUnit * count;
+  const facialAreaBatch = facialAreaPerUnit * count;
+  const innerAreaBatch = (drawerBoxSqft * count) + backSheetBatch;   // back's inner-side mica shares the inner-mica sheet pool
+
+  const plyBoards = nestSheets(plyRawBatch, waste);
+  const backBoards = nestSheets(backSheetBatch, waste);
+  const facialBoards = nestSheets(facialAreaBatch, waste);
+  const innerBoards = nestSheets(innerAreaBatch, waste);
+
+  const plySqftBilled = plyBoards * SHEET_SQFT;
+  const backSqftBilled = backBoards * SHEET_SQFT;
+  const edgeBandSqftBatch = plyRawBatch * 0.25;
+
+  return {
+    'Plywood 16mm': plySqftBilled,
+    'Back sheet 8mm': backSqftBilled,
+    'Facial mica (8×4)': facialBoards,
+    'Inner box mica (8×4)': innerBoards,
+    'Drawer channel': N * count,
+    'Hinges': 0,
+    'Labour': facialAreaBatch,
+    'Mica cold pressing': facialBoards + innerBoards,
+    'Wood cutting': plyBoards + backBoards,
+    'Edge banding 2mm': edgeBandSqftBatch,
+  };
+}
+
+function modularUnitCosts(){
+  const D = Number(document.getElementById('uD').value) || 0;
+  const channel = pickChannel(D, 'uChannelType');
+  const channelRow = uMaterials.find(m => m.name === 'Drawer channel');
+  channelRow.rate = channel.rate;
+  channelRow.displayName = channel.label;
+
+  const suggested = suggestUnitQty();
+  let matSub = 0, labSub = 0;
+  uMaterials.forEach(m => {
+    const sugg = suggested[m.name] || 0;
+    const qty = uOverrides[m.name] !== undefined ? uOverrides[m.name] : sugg;
+    const cost = qty * m.rate;
+    if(m.kind === 'labour') labSub += cost; else matSub += cost;
+  });
+  const transportPct = Number(document.getElementById('uTransportPct').value) || 0;
+  const transport = matSub * transportPct/100;
+  return { matSub, labSub, transport, suggested };
+}
+
+function renderModularUnit(){
+  const { matSub, labSub, transport, suggested } = modularUnitCosts();
+  const tbody = document.getElementById('uRows');
+  tbody.innerHTML = '';
+
+  uMaterials.forEach(m => {
+    const sugg = suggested[m.name] || 0;
+    const qty = uOverrides[m.name] !== undefined ? uOverrides[m.name] : sugg;
+    const cost = qty * m.rate;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m.displayName || m.name}</td>
+      <td class="num" style="color:var(--ink-soft);">${sugg.toFixed(2)}</td>
+      <td class="num"><input type="number" value="${qty.toFixed(2)}" data-name="${m.name}" step="0.01" min="0"></td>
+      <td>${m.unit}</td>
+      <td class="num">₹${m.rate.toLocaleString('en-IN')}</td>
+      <td class="num linetotal">${fmt(cost)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('input[data-name]').forEach(el => {
+    el.addEventListener('input', e => {
+      uOverrides[e.target.dataset.name] = Number(e.target.value) || 0;
+      renderModularUnit();
+    });
+  });
+
+  const count = Number(document.getElementById('uCount').value) || 1;
+  const batchTotal = withProfit(matSub + labSub + transport);
+  const perUnitAvg = batchTotal / count;
+
+  document.getElementById('uMatSub').textContent = fmt(matSub);
+  document.getElementById('uLabSub').textContent = fmt(labSub);
+  document.getElementById('uTransport').textContent = fmt(transport);
+  document.getElementById('uPerUnit').textContent = fmt(perUnitAvg);
+  document.getElementById('uCountLbl').textContent = count;
+  document.getElementById('uGrand').textContent = fmt(batchTotal);
+  if(typeof updateGrandAll === 'function') updateGrandAll();
+}
+
+function modularUnitSubtotal(){
+  const { matSub, labSub, transport } = modularUnitCosts();
+  return withProfit(matSub + labSub + transport);
+}
+
+['uW','uH','uD','uN','uCount','uTransportPct','uWaste','uChannelType'].forEach(id => {
+  const evt = id === 'uChannelType' ? 'change' : 'input';
+  document.getElementById(id).addEventListener(evt, () => {
+    uOverrides = {};
+    renderModularUnit();
+  });
+});
+
+modularUnitSection = { render: renderModularUnit, getSubtotal: modularUnitSubtotal };
+
+function updateGrandAll(){
+  const el = document.getElementById('grandAll');
+  if(!el) return;
+  if(!wardrobeSection || !kitchenSection || !panelingSection || !modularUnitSection) return;
+  const combinedSub = wardrobeSection.getSubtotal()
+    + kitchenSection.getSubtotal() + panelingSection.getSubtotal()
+    + modularUnitSection.getSubtotal();
+  const gstOn = document.getElementById('gstOn').checked;
+  const gstPct = Number(document.getElementById('gstPct').value) || 0;
+  const gst = gstOn ? combinedSub * gstPct/100 : 0;
+  document.getElementById('grandSub').textContent = fmt(combinedSub);
+  document.getElementById('grandGstLbl').textContent = gstPct;
+  document.getElementById('grandGst').textContent = fmt(gst);
+  el.textContent = fmt(combinedSub + gst);
+}
+
+wardrobeSection.render();
+kitchenSection.render();
+panelingSection.render();
+modularUnitSection.render();
+updateGrandAll();
+</script>
+</body>
+</html>
