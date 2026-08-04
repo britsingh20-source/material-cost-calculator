@@ -52,10 +52,11 @@
   .gstrow input[type=number]{width:52px;height:26px;font-size:12.5px;text-align:right;border:1px solid var(--line-strong);border-radius:6px;margin-left:6px;}
 
   .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius);}
+  .tablewrap table{border-radius:0;}
   @media(max-width:640px){
     .masthead{flex-direction:column;align-items:flex-start;gap:6px;}
-    thead th:nth-child(2), thead th:nth-child(3){display:none;}
-    tbody td:nth-child(2), tbody td:nth-child(3){display:none;}
+    table{min-width:640px;}
     .summary-card{width:100%;}
   }
 </style>
@@ -107,6 +108,7 @@
       </label>
     </div>
 
+    <div class="tablewrap">
     <table>
       <thead>
         <tr>
@@ -122,6 +124,7 @@
       </thead>
       <tbody id="wRows"></tbody>
     </table>
+    </div>
 
     <button class="addrow" id="wAddBtn">+ Add item</button>
 
@@ -143,6 +146,7 @@
       <label>Wastage % <input type="number" id="pWaste" value="10" step="1" min="0" style="width:52px;"></label>
     </div>
 
+    <div class="tablewrap">
     <table>
       <thead>
         <tr>
@@ -158,6 +162,7 @@
       </thead>
       <tbody id="pRows"></tbody>
     </table>
+    </div>
 
     <button class="addrow" id="pAddBtn">+ Add item</button>
 
@@ -172,6 +177,7 @@
     <h1 style="font-size:18px;font-weight:500;margin:0 0 3px;">Kitchen fittings and hardware</h1>
     <div class="sub" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">Rates below are typical market defaults — edit to match your design and vendor rates.</div>
 
+    <div class="tablewrap">
     <table>
       <thead>
         <tr>
@@ -186,6 +192,7 @@
       </thead>
       <tbody id="kRows"></tbody>
     </table>
+    </div>
 
     <button class="addrow" id="kAddBtn">+ Add item</button>
 
@@ -216,6 +223,7 @@
       </label>
     </div>
 
+    <div class="tablewrap">
     <table>
       <thead>
         <tr>
@@ -229,6 +237,7 @@
       </thead>
       <tbody id="uRows"></tbody>
     </table>
+    </div>
 
     <div class="summary">
       <div class="summary-card">
